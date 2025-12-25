@@ -1,0 +1,145 @@
+/* Reset some default styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #f4f6f8;
+  color: #333;
+}
+
+/* App container */
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  color: #0d6efd;
+  letter-spacing: 1px;
+}
+
+/* Hero section */
+.hero {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* File uploader */
+.fileUploaderContainer {
+  display: flex;             /* make label a flex container */
+  align-items: center;       /* vertically center */
+  justify-content: center;   /* horizontally center */
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+}
+.fileUploaderContainer:hover {
+  background-color: #0b5ed7;
+}
+
+.fileUploaderContainer input[type="file"] {
+  display: none;
+}
+
+
+
+/* Buttons */
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: bold;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  background-color: #0b5ed7;
+}
+
+button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Previews */
+img {
+  display: block;
+  margin-top: 10px;
+  border-radius: 8px;
+  max-width: 100%;
+  height: auto;
+  border: 2px solid #0d6efd;
+}
+
+/* Webcam container */
+.hero > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* OCR Results */
+.results {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.results__result {
+  border-bottom: 1px solid #e0e0e0;
+  padding: 15px 0;
+}
+
+.results__result:last-child {
+  border-bottom: none;
+}
+
+.results__result__info p {
+  margin-bottom: 8px;
+}
+
+.results__result__info strong {
+  color: #0d6efd;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero {
+    padding: 20px;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  button, .fileUploaderContainer {
+    width: 100%;
+    text-align: center;
+  }
+}

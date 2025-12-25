@@ -1,0 +1,5 @@
+.env
+backend/google_credentials.json
+node_modules/
+vendor/
+*.log
