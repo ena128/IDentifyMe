@@ -1,10 +1,11 @@
+
 const mongoose = require('mongoose');
 
 const verificationSchema = new mongoose.Schema({
-    dob: String,
-    age: Number,
-    faceConfidence: Number,
-    result: String,
+    dob: { type: String, required: false }, 
+    age: { type: Number, required: true },
+    faceConfidence: { type: Number, default: 0 },
+    result: { type: String, required: true },
     timestamp: { type: Date, default: Date.now }
 });
 

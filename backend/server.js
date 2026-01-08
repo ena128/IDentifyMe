@@ -67,7 +67,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             .replace(/[ODo]/g, '0')
             .replace(/[lI]/g, '1')
             .replace(/[S]/g, '5')
-            .replace(/[,]/g, '.'); // Nekad OCR vidi zarez umesto tačke
+            .replace(/[,]/g, '.'); 
 
         console.log("OCR Scanned Text:", cleanedText);
 
@@ -121,7 +121,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         if (age < 18) {
             resultText = `Access Denied: You are under 18 (${age}). ❌`;
         } else if (!faceMatch) {
-            resultText = `18+ (${age}) but face verification failed. ⚠️`;
+            resultText = `18+ (${age}) but not the same person. ⚠️`;
         } else {
             resultText = `Verification Successful! Age: ${age}. ✅`;
         }
@@ -129,13 +129,14 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         // 5. Spašavanje u Bazu
         try {
             const newRecord = new Verification({
-                dob: dobRaw,
-                age: age,
-                faceConfidence: confidence,
-                result: resultText
-            });
-            await newRecord.save();
-            console.log("Saved to MongoDB.");
+    dob: dobRaw,             
+    age: age,                
+    faceConfidence: confidence,
+    result: resultText       
+});
+
+await newRecord.save();      
+console.log("Saved to database!");
         } catch (dbErr) {
             console.error("DB Save Error:", dbErr.message);
         }
