@@ -1,471 +1,211 @@
-/* Reset some default styles */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+/* 1. RESET I OSNOVNI STIL */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-body {
-  background-color: #f4f6f8;
-  color: #333;
-}
-
-/* App container */
-.app {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* Header */
-.header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.header h1 {
-  font-size: 2.5rem;
-  color: #0d6efd;
-  letter-spacing: 1px;
-}
-
-/* Hero section */
-.hero {
-  background: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  margin-bottom: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* File uploader */
-.fileUploaderContainer {
-  display: flex;             /* make label a flex container */
-  align-items: center;       /* vertically center */
-  justify-content: center;   /* horizontally center */
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  font-weight: bold;
-  border-radius: 5px;
-  cursor: pointer;
-  text-align: center;
-}
-.fileUploaderContainer:hover {
-  background-color: #0b5ed7;
-}
-
-.fileUploaderContainer input[type="file"] {
-  display: none;
-}
-
-
-
-/* Buttons */
-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  background-color: #0d6efd;
-  color: #fff;
-  font-weight: bold;
-  transition: 0.3s ease;
-}
-
-button:hover {
-  background-color: #0b5ed7;
-}
-
-button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-/* Previews */
-img {
-  display: block;
-  margin-top: 10px;
-  border-radius: 8px;
-  max-width: 100%;
-  height: auto;
-  border: 2px solid #0d6efd;
-}
-
-/* Webcam container */
-.hero > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* OCR Results */
-.results {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-}
-
-.results__result {
-  border-bottom: 1px solid #e0e0e0;
-  padding: 15px 0;
-}
-
-.results__result:last-child {
-  border-bottom: none;
-}
-
-.results__result__info p {
-  margin-bottom: 8px;
-}
-
-.results__result__info strong {
-  color: #0d6efd;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .hero {
-    padding: 20px;
-  }
-
-  .header h1 {
-    font-size: 2rem;
-  }
-
-  button, .fileUploaderContainer {
-    width: 100%;
-    text-align: center;
-  }
-  
-}
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: #09d;
-  animation: spin 1s linear infinite;
-  margin: 10px auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Stilovi za rezultate */
-.result-container {
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: bold;
-}
-
-.result-icon {
-  font-size: 40px;
-  display: block;
-  margin-bottom: 10px;
-}
-
-.success-bg { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.error-bg { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-.warning-bg { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-.webcam-el {
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
-
-.generate-btn {
-  background-color: var(--success);
-  padding: 18px 60px;
-  font-size: 1.2rem;
-  border-radius: 50px;
-  border: none;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-}
-
-/* --- MODAL STYLES --- */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.modal-content {
-  background: white;
-  padding: 40px;
-  border-radius: 20px;
-  max-width: 400px;
-  width: 90%;
-  text-align: center;
-  animation: popUp 0.3s ease-out;
-}
-
-@keyframes popUp {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--primary);
-  border-radius: 50%;
-  width: 50px; height: 50px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-.status-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
-  color: white;
-  margin: 0 auto 20px;
-}
-
-.status-icon.success { background: var(--success); }
-.status-icon.fail { background: var(--danger); }
-
-.close-btn {
-  margin-top: 25px;
-  padding: 10px 40px;
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
   font-family: 'Poppins', sans-serif;
-  background: #f0f2f5; /* Nježna siva pozadina */
-  color: #333;
 }
 
-/* --- CENTRIRANJE CITAVE APLIKACIJE --- */
+body {
+  /* Pozadina iza kartice je bijela */
+  background-color: #ffffff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+}
+
 .app-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  width: 100%;
   padding: 20px;
 }
 
-/* --- GLAVNA KARTICA (CENTRALNI PROZOR) --- */
-.glass-card {
-  background: white;
+/* 2. GLAVNA KARTICA - SVIJETLO SVIJETLO PLAVA */
+.desktop-card {
+  background-color: #f0f8ff; /* AliceBlue - svijetlo svijetlo plava */
   width: 100%;
-  max-width: 450px; /* Ograničena širina da bude uredno */
+  max-width: 900px;
   border-radius: 24px;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-  padding: 30px;
+  box-shadow: 0 15px 45px rgba(0, 74, 153, 0.1);
+  padding: 40px;
+  border: 1px solid #d1e8ff;
   text-align: center;
-  position: relative;
-  overflow: hidden;
 }
 
-/* Header kartice */
+.card-header {
+  margin-bottom: 30px;
+}
+
 .card-header h1 {
-  margin: 0;
-  font-size: 1.8rem;
-  color: #2c3e50;
+  font-size: 2.2rem;
+  color: #004a99;
+  font-weight: 700;
+  margin-bottom: 5px;
 }
 
-.plus { color: #0d6efd; }
+.plus { color: #0056b3; }
 
 .card-header p {
-  color: #95a5a6;
-  font-size: 0.9rem;
-  margin-top: 5px;
-  margin-bottom: 25px;
+  color: #6c8bb0;
+  font-size: 0.95rem;
 }
 
-/* --- KORACI (STEPS) --- */
-.steps-container {
+/* 3. DESKTOP LAYOUT (SIDE-BY-SIDE) */
+.main-row {
+  display: flex;
+  flex-direction: row; 
+  gap: 30px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.column {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 15px;
-}
-
-.step-box {
-  background: #f8f9fa;
-  border-radius: 16px;
-  padding: 15px;
-  transition: 0.3s;
-  border: 1px solid transparent;
-}
-
-.step-box:hover {
-  border-color: #e2e6ea;
+  max-width: 380px;
 }
 
 .step-label {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #adb5bd;
-  margin-bottom: 10px;
+  color: #004a99;
   font-weight: 700;
   text-align: left;
 }
 
-/* --- DUGMAD I ELEMENTI --- */
-.upload-btn, .camera-btn {
+/* 4. SIMETRIJA KVADRATA (UPLOAD & SELFIE BUTTON) */
+.desktop-upload-label, .camera-btn {
+  width: 100%;
+  aspect-ratio: 4 / 3; /* Forsira identičnu veličinu oba kvadrata */
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: 16px;
   cursor: pointer;
-  transition: 0.2s;
-  font-size: 0.95rem;
+  transition: 0.3s;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
-.upload-btn {
-  background: white;
-  border: 2px dashed #cbd5e1;
-  color: #64748b;
+/* ID Upload Box (Dashed) */
+.desktop-upload-label {
+  background: #ffffff;
+  border: 2px dashed #a3c2e0;
+  color: #4a6fa5;
 }
 
-.upload-btn:hover {
-  border-color: #0d6efd;
-  color: #0d6efd;
+.desktop-upload-label:hover {
+  border-color: #0056b3;
+  color: #0056b3;
+  background: #f8fbff;
 }
 
-.upload-btn input { display: none; }
+.desktop-upload-label input { display: none; }
 
+/* Take Selfie Dugme - TAMNIJE PLAVA */
 .camera-btn {
-  background: white;
-  border: 2px solid #e2e8f0;
-  color: #475569;
+  background-color: #0056b3; 
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 86, 179, 0.2);
 }
 
 .camera-btn:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background-color: #004494;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 86, 179, 0.3);
 }
 
 .camera-btn:disabled {
-  opacity: 0.5;
+  background-color: #a0bfe0;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* Slike (Preview) */
-.image-wrapper {
+.icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+/* 5. SLIKE I WEBCAM (BEZ CRNIH RUBORA) */
+.image-wrapper, .webcam-wrapper {
   position: relative;
-  border-radius: 12px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 16px;
   overflow: hidden;
-  height: 160px;
-  background: #000;
+  background: #ffffff;
+  border: 2px solid #dbeafe;
 }
 
-.image-wrapper img {
+.image-wrapper img, .webcam-video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Slika ispunjava cijeli okvir u potpunosti */
+  display: block;
 }
 
-.remove-btn {
-  position: absolute;
-  top: 5px; right: 5px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 25px; height: 25px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-
-/* Webcam stilovi */
-.webcam-wrapper {
-  position: relative;
-  height: 200px;
-  background: black;
-  border-radius: 12px;
-  overflow: hidden;
+/* 6. VERIFY DUGME - TAMNIJE PLAVA */
+.card-footer {
   display: flex;
   justify-content: center;
+  margin-top: 35px;
 }
-
-.webcam-video {
-  height: 100%;
-  width: auto;
-}
-
-.capture-trigger {
-  position: absolute;
-  bottom: 10px;
-  width: 50px; height: 50px;
-  background: white;
-  border: 4px solid rgba(0,0,0,0.2);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.capture-trigger:active { transform: scale(0.9); }
-
-/* --- GLAVNO DUGME --- */
-.action-footer { margin-top: 25px; }
 
 .verify-main-btn {
   width: 100%;
+  max-width: 400px;
   padding: 16px;
-  background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
+  background-color: #0056b3; /* Tamnije plava */
   color: white;
   border: none;
   border-radius: 50px;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 10px 20px rgba(0, 86, 179, 0.3);
+  transition: 0.3s;
 }
 
 .verify-main-btn:hover:not(:disabled) {
+  background-color: #004494;
   transform: translateY(-2px);
-  box-shadow: 0 15px 25px rgba(13, 110, 253, 0.4);
+  box-shadow: 0 15px 25px rgba(0, 86, 179, 0.4);
 }
 
 .verify-main-btn:disabled {
   background: #bdc3c7;
-  box-shadow: none;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* --- MODAL (OVERLAY) --- */
+/* X Dugme za brisanje slike */
+.remove-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(0, 74, 153, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px; height: 30px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold;
+  z-index: 10;
+}
+
+/* 7. MODALNI PROZORČIĆ */
 .modal-backdrop {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 30, 60, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
@@ -474,65 +214,64 @@ body {
 }
 
 .modal-content {
-  background: white;
+  background: #ffffff;
   padding: 40px;
   border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   text-align: center;
-  max-width: 350px;
+  max-width: 400px;
   width: 90%;
-  animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes modalIn {
+@keyframes modalPop {
   from { opacity: 0; transform: scale(0.8); }
   to { opacity: 1; transform: scale(1); }
 }
 
-/* Loading */
 .spinner-ring {
   width: 50px; height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #0d6efd;
+  border: 5px solid #f0f8ff;
+  border-top: 5px solid #0056b3;
   border-radius: 50%;
   margin: 0 auto 20px;
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* Result Icons */
 .icon-badge {
-  width: 70px; height: 70px;
+  width: 80px; height: 80px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 35px;
+  font-size: 40px;
   color: white;
   margin: 0 auto 20px;
 }
 
-.success .icon-badge { background: #2ecc71; box-shadow: 0 10px 20px rgba(46, 204, 113, 0.4); }
-.error .icon-badge { background: #e74c3c; box-shadow: 0 10px 20px rgba(231, 76, 60, 0.4); }
-
-.result-details {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 12px;
-  margin: 20px 0;
-  font-size: 0.9rem;
-  color: #555;
-  font-weight: 500;
-}
+.success .icon-badge { background: #2ecc71; }
+.error .icon-badge { background: #e74c3c; }
 
 .done-btn {
-  background: #333;
+  background: #0056b3;
   color: white;
   border: none;
-  padding: 12px 30px;
+  padding: 12px 40px;
   border-radius: 30px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  margin-top: 20px;
 }
 
-.done-btn:hover { transform: scale(1.05); }
+/* Dugme unutar webcama */
+.capture-trigger {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px; height: 50px;
+  background: white;
+  border: 4px solid rgba(0,0,0,0.2);
+  border-radius: 50%;
+  cursor: pointer;
+}
