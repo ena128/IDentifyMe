@@ -31,7 +31,7 @@ const App = () => {
     formData.append('selfieImage', selfieBlob, 'selfie.jpg');
 
     
-    const res = await fetch(`${REACT_APP_API_URL}/verify`, { 
+    const res = await fetch(`${API_URL}/verify`, { 
       method: 'POST', 
       body: formData 
     });
