@@ -9,10 +9,17 @@ const Tesseract = require('tesseract.js');
 const mongoose = require('mongoose');
 const Verification = require('./Verification');
 
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+
+app.use(cors({
+  origin: 'https://identifyme-frontend-url.ondigitalocean.app', // Ovdje stavi pravi URL svog frontenda
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // MongoDB Connection
