@@ -123,14 +123,18 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { headers: form.getHeaders() });
         const confidence = faceResponse.data.confidence || 0;
         const faceMatch = confidence >= 70;
+        const isAdult = age >= 18;
 
         let resultText = "";
-        if (age < 18) {
-            resultText = `Access Denied: You are under 18 (${age}). ❌`;
-        } else if (!faceMatch) {
-            resultText = `18+ (${age}) but not the same person. ⚠️`;
-        } else {
-            resultText = `Verification Successful! Age: ${age}. ✅`;
+
+        if (isSamePerson && isAdult) {
+            resultText = "Succesfully Verified ✅ (Same person & 18+)";
+        } else if (!isSamePerson && isAdult) {
+            resultText = "Verification Failed ❌: Faces don't match, not the same person but 18+";
+        } else if (isSamePerson && !isAdult) {
+            resultText = "Verification Failed ❌: Person is under 18 years old";
+        } else if (!isSamePerson && !isAdult) {
+            resultText = "Verification Failed ❌: Not the same person and under 18";
         }
 
         // 5. Spašavanje u Bazu
