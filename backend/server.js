@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-  origin: 'https://identifyme-app-fnhxi.ondigitalocean.app/', 
+  origin: 'https://identifyme-app-fnhxi.ondigitalocean.app', 
   methods: ['GET', 'POST'],
   credentials: true
 }));
