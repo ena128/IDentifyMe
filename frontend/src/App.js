@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './App.css';
 import Webcam from 'react-webcam';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const App = () => {
   const [idFile, setIdFile] = useState(null);
@@ -19,23 +20,41 @@ const App = () => {
   };
 
   const verifyUser = async () => {
-    if (!idFile || !selfiePreview) return;
-    setStatus('loading');
-    const formData = new FormData();
-    formData.append('idImage', idFile);
+  if (!idFile || !selfiePreview) return;
+  setStatus('loading');
+  
+  const formData = new FormData();
+  formData.append('idImage', idFile);
+  
+  try {
     const selfieBlob = await fetch(selfiePreview).then(r => r.blob());
     formData.append('selfieImage', selfieBlob, 'selfie.jpg');
 
-    try {
-      const res = await fetch('http://localhost:5000/verify', { method: 'POST', body: formData });
-      const data = await res.json();
-      setVerificationResult({ success: data.result.includes('✅'), message: data.result });
-      setStatus('result');
-    } catch (e) {
-      setVerificationResult({ success: false, message: "Server Error ❌" });
-      setStatus('result');
-    }
-  };
+    
+    const res = await fetch(`${REACT_APP_API_URL}/verify`, { 
+      method: 'POST', 
+      body: formData 
+    });
+
+    if (!res.ok) throw new Error('Network response was not ok');
+
+    const data = await res.json();
+    
+    // Provjera rezultata na osnovu odgovora sa servera
+    setVerificationResult({ 
+      success: data.result && data.result.includes('✅'), 
+      message: data.result || "Verification finished"
+    });
+    setStatus('result');
+  } catch (e) {
+    console.error("Verification error:", e);
+    setVerificationResult({ 
+      success: false, 
+      message: "Server Error ❌" 
+    });
+    setStatus('result');
+  }
+};
 
   return (
     <div className="app-container">
