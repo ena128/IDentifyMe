@@ -82,24 +82,35 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
 
         // 3. Pronalaženje Datuma Rođenja (DOB Logic)
         // Tražimo sve datume u formatu XX.XX.XXXX
-      const dateRegex = /(\d{2})[\.\s\-\/]+(\d{2})[\.\s\-\/]+(\d{4})/g;
+        const dateRegex = /(\d{2})[\.\s\-\/]+(\d{2})[\.\s\-\/]+(\d{4})/g;
         const matches = [...cleanedText.matchAll(dateRegex)];
 
         let dobRaw = null;
+
         if (matches.length > 0) {
-            const foundDates = matches.map(m => ({
-                clean: `${m[1]}/${m[2]}/${m[3]}`,
-                year: parseInt(m[3], 10)
-            }));
+            // Pravimo listu svih pronađenih datuma
+            const foundDates = matches.map(m => {
+                return {
+                    original: m[0],
+                    clean: `${m[1]}/${m[2]}/${m[3]}`, // Formatiramo kao DD/MM/YYYY
+                    year: parseInt(m[3], 10) // Izvučemo godinu
+                };
+            });
+
+            console.log("Found dates:", foundDates);
+
+            // LOGIKA: Sortiramo po godini (od najmanje ka najvećoj)
+            // Datum rođenja je UVIJEK najmanja godina (npr. 1995 < 2031)
+            // Ovim eliminišemo "Valid Until" datum.
             foundDates.sort((a, b) => a.year - b.year);
+
+            // Uzimamo prvi datum iz sortirane liste (najstariji)
             dobRaw = foundDates[0].clean;
+            console.log("Selected DOB (Oldest Date):", dobRaw);
         }
 
-        // AKO NIJE NAŠAO DATUM -> TEK ONDA IZBACI GREŠKU
         if (!dobRaw) {
-            const errorMsg = "Date of Birth not found. Please put a clearer picture ❌";
-            await new Verification({ result: errorMsg, age: 0 }).save();
-            return res.json({ success: false, result: errorMsg });
+            return res.json({ success: false, message: 'Date of Birth or ID not detected. Please capture a closer image without glare.' });
         }
 
         const age = calculateAge(dobRaw);
@@ -145,7 +156,6 @@ console.log("Saved to database!");
         }
 
         res.json({ success: isSamePerson && isAdult, result: resultText, age, confidence });
-
 
     } catch (error) {
         console.error("Database Server Error:", error.message);
