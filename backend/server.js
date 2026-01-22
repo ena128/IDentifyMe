@@ -125,6 +125,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { headers: form.getHeaders() });
         const confidence = faceResponse.data.confidence || 0;
         const faceMatch = confidence >= 70;
+        const isSamePerson = confidence >= 70;
         const isAdult = age >= 18;
 
         let resultText = "";
