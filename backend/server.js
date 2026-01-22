@@ -79,6 +79,15 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             .replace(/[,]/g, '.'); 
 
         console.log("OCR Scanned Text:", cleanedText);
+        const idKeywords = ["identity", "card", "hercegovina", "republic", "birth", "prezime", "ime"];
+        const hasIdKeywords = idKeywords.some(keyword => cleanedText.toLowerCase().includes(keyword));
+
+        if (!hasIdKeywords) {
+            return res.json({ 
+                success: false, 
+                result: "No ID found ❌: Please insert your ID photo (Identity card not detected)." 
+            });
+        }
 
         // 3. Pronalaženje Datuma Rođenja (DOB Logic)
         // Tražimo sve datume u formatu XX.XX.XXXX

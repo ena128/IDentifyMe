@@ -61,7 +61,7 @@ const App = () => {
       <div className="desktop-card">
         <header className="card-header">
           <h1>IDentifyMe<span className="plus">+</span></h1>
-          <p>Professional Desktop Identity Verification</p>
+          <p>Professional Identity Verification</p>
         </header>
 
         <div className="main-row">
