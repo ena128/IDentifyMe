@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import './App.css';
 import Webcam from 'react-webcam';
 
+// URL vašeg DigitalOcean backend servisa
 const API_URL = process.env.REACT_APP_API_URL || 'https://identify-me-app-2ndhu.ondigitalocean.app';
 
 const App = () => {
@@ -31,17 +32,25 @@ const App = () => {
       const selfieBlob = await fetch(selfiePreview).then(r => r.blob());
       formData.append('selfieImage', selfieBlob, 'selfie.jpg');
 
-      const res = await fetch(`${API_URL}/verify`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_URL}/verify`, { 
+        method: 'POST', 
+        body: formData 
+      });
+
       const data = await res.json();
       
-      // Koristimo direktno success status sa servera
+      // Koristimo 'success' status direktno sa servera za boju i prikaz rezultata
       setVerificationResult({ 
         success: data.success, 
         message: data.result || "Verification finished"
       });
       setStatus('result');
     } catch (e) {
-      setVerificationResult({ success: false, message: "Server Error ❌" });
+      console.error("Verification error:", e);
+      setVerificationResult({ 
+        success: false, 
+        message: "Server Error: Could not reach verification service ❌" 
+      });
       setStatus('result');
     }
   };
@@ -55,6 +64,7 @@ const App = () => {
         </header>
 
         <div className="main-row">
+          {/* LIJEVA STRANA - DOKUMENT */}
           <div className="column">
             <div className="step-label">1. Identity Document</div>
             <div className="upload-zone">
@@ -64,7 +74,10 @@ const App = () => {
                   <span>Click to upload ID Card</span>
                   <input type="file" onChange={(e) => {
                     const file = e.target.files[0];
-                    if(file) { setIdFile(file); setIdPreview(URL.createObjectURL(file)); }
+                    if(file) { 
+                        setIdFile(file); 
+                        setIdPreview(URL.createObjectURL(file)); 
+                    }
                   }} />
                 </label>
               ) : (
@@ -78,6 +91,7 @@ const App = () => {
 
           <div className="vertical-divider"></div>
 
+          {/* DESNA STRANA - SELFIE */}
           <div className="column">
             <div className="step-label">2. Face Verification</div>
             <div className="upload-zone">
@@ -87,12 +101,14 @@ const App = () => {
                   <span>Take Live Selfie</span>
                 </button>
               )}
+
               {showWebcam && (
                 <div className="webcam-wrapper">
                   <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="webcam-video" />
                   <button onClick={captureSelfie} className="capture-trigger"></button>
                 </div>
               )}
+
               {selfiePreview && (
                 <div className="image-wrapper">
                   <img src={selfiePreview} alt="Selfie" />
@@ -116,13 +132,13 @@ const App = () => {
             {status === 'loading' && (
               <div className="loading-view">
                 <div className="spinner-ring"></div>
-                <h3>Processing...</h3>
+                <h3>Processing Identity...</h3>
               </div>
             )}
             {status === 'result' && (
               <div className={`result-view ${verificationResult.success ? 'success' : 'error'}`}>
                 <div className="icon-badge">{verificationResult.success ? '✓' : '!'}</div>
-                <h2>{verificationResult.success ? 'Success' : 'Failed'}</h2>
+                <h2>{verificationResult.success ? 'Success' : 'Verification Failed'}</h2>
                 <p className="res-msg">{verificationResult.message}</p>
                 <button onClick={() => setStatus('idle')} className="done-btn">Close</button>
               </div>
