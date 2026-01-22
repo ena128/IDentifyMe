@@ -9,28 +9,30 @@ const Tesseract = require('tesseract.js');
 const mongoose = require('mongoose');
 const Verification = require('./Verification');
 
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/identifyme';
 
-// 1. CORS POSTAVKE (Bez kose crte na kraju, usklađeno sa tvojim frontendom)
+
+
 app.use(cors({
-    origin: 'https://identifyme-app-fnhxi.ondigitalocean.app', 
-    methods: ['GET', 'POST'],
-    credentials: true
+  origin: 'https://identifyme-app-fnhxi.ondigitalocean.app', 
+  methods: ['GET', 'POST'],
+  credentials: true
 }));
 
 app.use(express.json());
 
-// 2. MONGODB KONEKCIJA (Koristi DigitalOcean varijablu ili lokalni server)
-const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/identifyme';
+// MongoDB Connection
 mongoose.connect(mongoURI)
-    .then(() => console.log("Connected to MongoDB ✅"))
-    .catch(err => console.error("MongoDB connection error ❌:", err));
+    .then(() => console.log("Connected to MongoDB..."))
+    .catch(err => console.error("MongoDB connection error:", err));
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 /**
- * Helper: Izračunavanje godina na osnovu datuma
+ * Helper: Calculate age
  */
 function calculateAge(dobString) {
     try {
@@ -48,127 +50,116 @@ function calculateAge(dobString) {
 
 app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]), async (req, res) => {
     console.log("--- Processing Verification ---");
-    
-    // Inicijalizacija podataka sa default vrijednostima da baza ne bi odbila zapis
-    let dobRaw = "Not detected";
-    let age = 0;
-    let confidence = 0;
-    let resultText = "Processing started";
-
     try {
-        // Provjera da li su slike poslane
         if (!req.files || !req.files['idImage'] || !req.files['selfieImage']) {
-            resultText = "Verification Failed ❌: Images are missing.";
-            await new Verification({ result: resultText, age: 0 }).save();
-            return res.status(400).json({ success: false, result: resultText });
+            return res.status(400).json({ success: false, message: 'Images are missing.' });
         }
 
         const idImage = req.files['idImage'][0];
         const selfieImage = req.files['selfieImage'][0];
 
-        // 1. OBRADA SLIKE (Smanjeno na 1200 zbog uštede memorije na DigitalOcean)
+        // 1. OBRADA SLIKE (Povećavamo kontrast i pretvaramo u crno-bijelo)
+        // Ovo pomaže da se tačke u datumu bolje vide (DD.MM.YYYY)
         const preprocessedIdBuffer = await sharp(idImage.buffer)
-            .resize(1200) 
+            .resize(2000) // Veoma velika rezolucija za sitne brojeve
             .grayscale()
             .normalize()
             .sharpen({ sigma: 1.5 })
-            .threshold(150)
+            .threshold(150) // Pretvara u čistu crno-bijelu sliku (uklanja pozadinu/hologram)
             .toBuffer();
 
-        // 2. OCR SKENIRANJE
+        // 2. OCR (Tesseract)
         const { data: { text } } = await Tesseract.recognize(preprocessedIdBuffer, 'eng');
+        
+        // Čišćenje OCR grešaka (O->0, I->1, S->5)
         let cleanedText = text
             .replace(/[ODo]/g, '0')
             .replace(/[lI]/g, '1')
             .replace(/[S]/g, '5')
             .replace(/[,]/g, '.'); 
 
-        // 3. PROVJERA DA LI JE SLIKA LIČNA KARTA
-        const idKeywords = ["identity", "card", "hercegovina", "republic", "birth", "prezime", "ime", "datum", "bosna"];
-        const hasIdKeywords = idKeywords.some(keyword => cleanedText.toLowerCase().includes(keyword));
+        console.log("OCR Scanned Text:", cleanedText);
 
-        if (!hasIdKeywords) {
-            resultText = "No ID found ❌: Please insert your ID photo (Identity card not detected).";
-            await new Verification({ result: resultText, age: 0, dob: "Invalid Document" }).save();
-            return res.json({ success: false, result: resultText });
-        }
-
-        // 4. PRONALAŽENJE DATUMA ROĐENJA
+        // 3. Pronalaženje Datuma Rođenja (DOB Logic)
+        // Tražimo sve datume u formatu XX.XX.XXXX
         const dateRegex = /(\d{2})[\.\s\-\/]+(\d{2})[\.\s\-\/]+(\d{4})/g;
         const matches = [...cleanedText.matchAll(dateRegex)];
 
+        let dobRaw = null;
+
         if (matches.length > 0) {
-            const foundDates = matches.map(m => ({
-                clean: `${m[1]}/${m[2]}/${m[3]}`,
-                year: parseInt(m[3], 10)
-            }));
+            // Pravimo listu svih pronađenih datuma
+            const foundDates = matches.map(m => {
+                return {
+                    original: m[0],
+                    clean: `${m[1]}/${m[2]}/${m[3]}`, // Formatiramo kao DD/MM/YYYY
+                    year: parseInt(m[3], 10) // Izvučemo godinu
+                };
+            });
+
+            console.log("Found dates:", foundDates);
+
+            // LOGIKA: Sortiramo po godini (od najmanje ka najvećoj)
+            // Datum rođenja je UVIJEK najmanja godina (npr. 1995 < 2031)
+            // Ovim eliminišemo "Valid Until" datum.
             foundDates.sort((a, b) => a.year - b.year);
+
+            // Uzimamo prvi datum iz sortirane liste (najstariji)
             dobRaw = foundDates[0].clean;
-            age = calculateAge(dobRaw);
-        } else {
-            resultText = "Verification Failed ❌: Date of Birth not detected. Capture a closer image.";
-            await new Verification({ result: resultText, age: 0, dob: "Date not found" }).save();
-            return res.json({ success: false, result: resultText });
+            console.log("Selected DOB (Oldest Date):", dobRaw);
         }
 
-        // 5. BIOMETRIJA (Face++)
+        if (!dobRaw) {
+            return res.json({ success: false, message: 'Date of Birth not detected. Please capture a closer image without glare.' });
+        }
+
+        const age = calculateAge(dobRaw);
+
+        // 4. Biometrija (Face++)
         const form = new FormData();
         form.append('api_key', process.env.FACEPP_API_KEY);
         form.append('api_secret', process.env.FACEPP_API_SECRET);
         form.append('image_file1', idImage.buffer, { filename: 'id.jpg' });
         form.append('image_file2', selfieImage.buffer, { filename: 'selfie.jpg' });
 
-        const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { 
-            headers: form.getHeaders() 
-        });
-        
-        confidence = faceResponse.data.confidence || 0;
+        const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { headers: form.getHeaders() });
+        const confidence = faceResponse.data.confidence || 0;
+        const faceMatch = confidence >= 70;
         const isSamePerson = confidence >= 70;
         const isAdult = age >= 18;
 
-        // ODREĐIVANJE FINALNOG TEKSTA
+        let resultText = "";
+
         if (isSamePerson && isAdult) {
-            resultText = "Succesfully Verified ✅ (Same person & 18+)";
+            resultText = "Same person & 18+";
         } else if (!isSamePerson && isAdult) {
-            resultText = "Verification Failed ❌: Faces don't match, not the same person but 18+";
+            resultText = "Faces don't match, not the same person but 18+";
         } else if (isSamePerson && !isAdult) {
-            resultText = "Verification Failed ❌: Person is under 18 years old";
-        } else {
+            resultText = "Person is under 18 years old";
+        } else if (!isSamePerson && !isAdult) {
             resultText = "Verification Failed ❌: Not the same person and under 18";
         }
 
-        // 6. SPAŠAVANJE FINALNOG REZULTATA U BAZU
-        const record = new Verification({
-            dob: dobRaw,
-            age: age,
-            faceConfidence: confidence,
-            result: resultText
-        });
-        await record.save();
+        // 5. Spašavanje u Bazu
+        try {
+            const newRecord = new Verification({
+                dob: dobRaw,             
+                age: age,                
+                faceConfidence: confidence,
+                result: resultText       
+});
 
-        res.json({ 
-            success: isSamePerson && isAdult, 
-            result: resultText, 
-            age, 
-            confidence 
-        });
+await newRecord.save();      
+console.log("Saved to database!");
+        } catch (dbErr) {
+            console.error("DB Save Error:", dbErr.message);
+        }
+
+        res.json({ success: true, result: resultText, age, confidence });
 
     } catch (error) {
-        console.error("SERVER ERROR:", error.message);
-        
-        // Čuvanje čak i kritične greške u bazu radi praćenja
-        try {
-            await new Verification({ 
-                result: "Critical Server Error: " + error.message,
-                age: 0 
-            }).save();
-        } catch (dbErr) { console.error("Could not save crash to DB"); }
-        
-        res.status(500).json({ 
-            success: false, 
-            result: "Database/Server error occurred.",
-            details: error.message 
-        });
+        console.error("Database Server Error:", error.message);
+        res.status(500).json({ success: false, message: " Database Server error occurred." });
     }
 });
 
