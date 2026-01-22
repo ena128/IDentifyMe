@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import './App.css';
 import Webcam from 'react-webcam';
 
-// DigitalOcean backend URL ili lokalni
 const API_URL = process.env.REACT_APP_API_URL || 'https://identify-me-app-2ndhu.ondigitalocean.app';
 
 const App = () => {
@@ -11,14 +10,7 @@ const App = () => {
   const [selfiePreview, setSelfiePreview] = useState(null);
   const [showWebcam, setShowWebcam] = useState(false);
   const [status, setStatus] = useState('idle');
-  
-  // Proširen state za dodatne informacije
-  const [verificationResult, setVerificationResult] = useState({ 
-    success: false, 
-    message: '',
-    age: null,
-    confidence: null 
-  });
+  const [verificationResult, setVerificationResult] = useState({ success: false, message: '' });
   
   const webcamRef = useRef(null);
 
@@ -39,28 +31,17 @@ const App = () => {
       const selfieBlob = await fetch(selfiePreview).then(r => r.blob());
       formData.append('selfieImage', selfieBlob, 'selfie.jpg');
 
-      const res = await fetch(`${API_URL}/verify`, { 
-        method: 'POST', 
-        body: formData 
-      });
-
+      const res = await fetch(`${API_URL}/verify`, { method: 'POST', body: formData });
       const data = await res.json();
       
-      // Postavljanje svih podataka dobijenih sa servera
+      // Koristimo direktno success status sa servera
       setVerificationResult({ 
         success: data.success, 
-        message: data.result || data.message,
-        age: data.age,
-        confidence: data.confidence
+        message: data.result || "Verification finished"
       });
-      
       setStatus('result');
     } catch (e) {
-      console.error("Verification error:", e);
-      setVerificationResult({ 
-        success: false, 
-        message: "Network Error: Could not connect to server ❌" 
-      });
+      setVerificationResult({ success: false, message: "Server Error ❌" });
       setStatus('result');
     }
   };
@@ -74,7 +55,6 @@ const App = () => {
         </header>
 
         <div className="main-row">
-          {/* 1. IDENTITY DOCUMENT */}
           <div className="column">
             <div className="step-label">1. Identity Document</div>
             <div className="upload-zone">
@@ -84,16 +64,13 @@ const App = () => {
                   <span>Click to upload ID Card</span>
                   <input type="file" onChange={(e) => {
                     const file = e.target.files[0];
-                    if(file) { 
-                      setIdFile(file); 
-                      setIdPreview(URL.createObjectURL(file)); 
-                    }
+                    if(file) { setIdFile(file); setIdPreview(URL.createObjectURL(file)); }
                   }} />
                 </label>
               ) : (
                 <div className="image-wrapper">
                   <img src={idPreview} alt="ID" />
-                  <button className="remove-btn" onClick={() => { setIdPreview(null); setIdFile(null); }}>✕</button>
+                  <button className="remove-btn" onClick={() => setIdPreview(null)}>✕</button>
                 </div>
               )}
             </div>
@@ -101,7 +78,6 @@ const App = () => {
 
           <div className="vertical-divider"></div>
 
-          {/* 2. FACE VERIFICATION */}
           <div className="column">
             <div className="step-label">2. Face Verification</div>
             <div className="upload-zone">
@@ -111,14 +87,12 @@ const App = () => {
                   <span>Take Live Selfie</span>
                 </button>
               )}
-
               {showWebcam && (
                 <div className="webcam-wrapper">
                   <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="webcam-video" />
                   <button onClick={captureSelfie} className="capture-trigger"></button>
                 </div>
               )}
-
               {selfiePreview && (
                 <div className="image-wrapper">
                   <img src={selfiePreview} alt="Selfie" />
@@ -130,42 +104,27 @@ const App = () => {
         </div>
 
         <footer className="card-footer">
-          <button className="verify-main-btn" onClick={verifyUser} disabled={!idFile || !selfiePreview || status === 'loading'}>
-            {status === 'loading' ? 'PROCESSING...' : 'VERIFY MY IDENTITY'}
+          <button className="verify-main-btn" onClick={verifyUser} disabled={!idFile || !selfiePreview}>
+            VERIFY MY IDENTITY
           </button>
         </footer>
       </div>
 
-      {/* MODAL ZA REZULTAT */}
       {status !== 'idle' && (
         <div className="modal-backdrop">
           <div className="modal-content">
             {status === 'loading' && (
               <div className="loading-view">
                 <div className="spinner-ring"></div>
-                <h3>Verifying Identity...</h3>
-                <p>Please wait, scanning documents and analyzing faces.</p>
+                <h3>Processing...</h3>
               </div>
             )}
-            
             {status === 'result' && (
               <div className={`result-view ${verificationResult.success ? 'success' : 'error'}`}>
                 <div className="icon-badge">{verificationResult.success ? '✓' : '!'}</div>
-                <h2>{verificationResult.success ? 'Verification Successful' : 'Verification Failed'}</h2>
-                
-                <div className="result-details">
-                   <p className="res-msg">{verificationResult.message}</p>
-                   
-                   {/* Prikaz dodatnih info ako postoje */}
-                   {verificationResult.age && (
-                     <div className="stats-box">
-                       <p>Detected Age: <strong>{verificationResult.age}</strong></p>
-                       <p>Similarity: <strong>{verificationResult.confidence?.toFixed(1)}%</strong></p>
-                     </div>
-                   )}
-                </div>
-
-                <button onClick={() => setStatus('idle')} className="done-btn">Back to Start</button>
+                <h2>{verificationResult.success ? 'Success' : 'Failed'}</h2>
+                <p className="res-msg">{verificationResult.message}</p>
+                <button onClick={() => setStatus('idle')} className="done-btn">Close</button>
               </div>
             )}
           </div>
