@@ -155,8 +155,8 @@ console.log("Saved to database!");
         res.json({ success: true, result: resultText, age, confidence });
 
     } catch (error) {
-        console.error("Server Error:", error.message);
-        res.status(500).json({ success: false, message: "Server error occurred." });
+        console.error("Database Server Error:", error.message);
+        res.status(500).json({ success: false, message: " Database Server error occurred." });
     }
 });
 
