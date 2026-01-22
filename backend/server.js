@@ -82,10 +82,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
 
         // 3. Pronalaženje Datuma Rođenja (DOB Logic)
         // Tražimo sve datume u formatu XX.XX.XXXX
-       const idKeywords = ["identity", "card", "licna", "lična", "karta", "prezime", "ime", "birth", "datum", "rodjenja", "rođenja", "bosna", "hercegovina"];
-        const hasIdKeywords = idKeywords.some(keyword => cleanedText.toLowerCase().includes(keyword));
-
-        const dateRegex = /(\d{2})[\.\s\-\/]+(\d{2})[\.\s\-\/]+(\d{4})/g;
+      const dateRegex = /(\d{2})[\.\s\-\/]+(\d{2})[\.\s\-\/]+(\d{4})/g;
         const matches = [...cleanedText.matchAll(dateRegex)];
 
         let dobRaw = null;
@@ -96,16 +93,12 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             }));
             foundDates.sort((a, b) => a.year - b.year);
             dobRaw = foundDates[0].clean;
-            console.log("Selected DOB (Oldest Date):", dobRaw);
         }
 
-        // Provjera da li su podaci pronađeni
-        if (!hasIdKeywords || !dobRaw) {
-            const errorMsg = "ID or Date of Birth not found. Please put a clearer picture ❌";
-            try {
-                await new Verification({ result: errorMsg, age: 0 }).save();
-            } catch (dbErr) { console.error("DB Save Error:", dbErr.message); }
-            
+        // AKO NIJE NAŠAO DATUM -> TEK ONDA IZBACI GREŠKU
+        if (!dobRaw) {
+            const errorMsg = "Date of Birth not found. Please put a clearer picture ❌";
+            await new Verification({ result: errorMsg, age: 0 }).save();
             return res.json({ success: false, result: errorMsg });
         }
 
