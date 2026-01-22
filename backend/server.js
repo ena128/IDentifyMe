@@ -155,7 +155,8 @@ console.log("Saved to database!");
             console.error("DB Save Error:", dbErr.message);
         }
 
-        res.json({ success: true, result: resultText, age, confidence });
+        res.json({ success: isSamePerson && isAdult, result: resultText, age, confidence });
+        
 
     } catch (error) {
         console.error("Database Server Error:", error.message);
