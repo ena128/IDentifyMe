@@ -9,12 +9,9 @@ const Tesseract = require('tesseract.js');
 const mongoose = require('mongoose');
 const Verification = require('./Verification');
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/identifyme';
-
-
 
 app.use(cors({
   origin: 'https://identifyme-app-fnhxi.ondigitalocean.app', 
@@ -58,20 +55,18 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         const idImage = req.files['idImage'][0];
         const selfieImage = req.files['selfieImage'][0];
 
-        // 1. OBRADA SLIKE (Povećavamo kontrast i pretvaramo u crno-bijelo)
-        // Ovo pomaže da se tačke u datumu bolje vide (DD.MM.YYYY)
+        // 1. OBRADA SLIKE
         const preprocessedIdBuffer = await sharp(idImage.buffer)
-            .resize(2000) // Veoma velika rezolucija za sitne brojeve
+            .resize(2000)
             .grayscale()
             .normalize()
             .sharpen({ sigma: 1.5 })
-            .threshold(150) // Pretvara u čistu crno-bijelu sliku (uklanja pozadinu/hologram)
+            .threshold(150)
             .toBuffer();
 
         // 2. OCR (Tesseract)
         const { data: { text } } = await Tesseract.recognize(preprocessedIdBuffer, 'eng');
         
-        // Čišćenje OCR grešaka (O->0, I->1, S->5)
         let cleanedText = text
             .replace(/[ODo]/g, '0')
             .replace(/[lI]/g, '1')
@@ -80,37 +75,32 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
 
         console.log("OCR Scanned Text:", cleanedText);
 
-        // 3. Pronalaženje Datuma Rođenja (DOB Logic)
-        // Tražimo sve datume u formatu XX.XX.XXXX
+        // 3. Pronalaženje ključnih riječi i datuma
+        const idKeywords = ["identity", "card", "licna", "lična", "karta", "prezime", "ime", "birth", "datum", "rodjenja", "rođenja", "bosna", "hercegovina"];
+        const hasIdKeywords = idKeywords.some(keyword => cleanedText.toLowerCase().includes(keyword));
+
         const dateRegex = /(\d{2})[\.\s\-\/]+(\d{2})[\.\s\-\/]+(\d{4})/g;
         const matches = [...cleanedText.matchAll(dateRegex)];
 
         let dobRaw = null;
-
         if (matches.length > 0) {
-            // Pravimo listu svih pronađenih datuma
-            const foundDates = matches.map(m => {
-                return {
-                    original: m[0],
-                    clean: `${m[1]}/${m[2]}/${m[3]}`, // Formatiramo kao DD/MM/YYYY
-                    year: parseInt(m[3], 10) // Izvučemo godinu
-                };
-            });
-
-            console.log("Found dates:", foundDates);
-
-            // LOGIKA: Sortiramo po godini (od najmanje ka najvećoj)
-            // Datum rođenja je UVIJEK najmanja godina (npr. 1995 < 2031)
-            // Ovim eliminišemo "Valid Until" datum.
+            const foundDates = matches.map(m => ({
+                clean: `${m[1]}/${m[2]}/${m[3]}`,
+                year: parseInt(m[3], 10)
+            }));
             foundDates.sort((a, b) => a.year - b.year);
-
-            // Uzimamo prvi datum iz sortirane liste (najstariji)
             dobRaw = foundDates[0].clean;
             console.log("Selected DOB (Oldest Date):", dobRaw);
         }
 
-        if (!dobRaw) {
-            return res.json({ success: false, message: 'Date of Birth or ID not detected. Please capture a closer image without glare.' });
+        // Provjera da li su podaci pronađeni
+        if (!hasIdKeywords || !dobRaw) {
+            const errorMsg = "ID or Date of Birth not found. Please put a clearer picture ❌";
+            try {
+                await new Verification({ result: errorMsg, age: 0 }).save();
+            } catch (dbErr) { console.error("DB Save Error:", dbErr.message); }
+            
+            return res.json({ success: false, result: errorMsg });
         }
 
         const age = calculateAge(dobRaw);
@@ -124,42 +114,45 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
 
         const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { headers: form.getHeaders() });
         const confidence = faceResponse.data.confidence || 0;
-        const faceMatch = confidence >= 70;
+        
         const isSamePerson = confidence >= 70;
         const isAdult = age >= 18;
 
         let resultText = "";
-
         if (isSamePerson && isAdult) {
-            resultText = "Same person & 18+";
+            resultText = "Same person & 18+ ✅";
         } else if (!isSamePerson && isAdult) {
-            resultText = "Faces don't match, not the same person but 18+";
+            resultText = "Faces don't match, not the same person but 18+ ❌";
         } else if (isSamePerson && !isAdult) {
-            resultText = "Person is under 18 years old";
-        } else if (!isSamePerson && !isAdult) {
-            resultText = "Verification Failed ❌: Not the same person and under 18";
+            resultText = "Person is under 18 years old ❌";
+        } else {
+            resultText = "Verification Failed: Not the same person and under 18 ❌";
         }
 
         // 5. Spašavanje u Bazu
         try {
-            const newRecord = new Verification({
+            await new Verification({
                 dob: dobRaw,             
                 age: age,                
                 faceConfidence: confidence,
                 result: resultText       
-});
-
-await newRecord.save();      
-console.log("Saved to database!");
+            }).save();
+            console.log("Saved to database!");
         } catch (dbErr) {
             console.error("DB Save Error:", dbErr.message);
         }
 
-        res.json({ success: true, result: resultText, age, confidence });
+        // Slanje odgovora
+        res.json({ 
+            success: isSamePerson && isAdult, 
+            result: resultText, 
+            age, 
+            confidence 
+        });
 
     } catch (error) {
         console.error("Database Server Error:", error.message);
-        res.status(500).json({ success: false, message: " Database Server error occurred." });
+        res.status(500).json({ success: false, message: "Database Server error occurred." });
     }
 });
 
