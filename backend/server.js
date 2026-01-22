@@ -131,22 +131,22 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         let resultText = "";
 
         if (isSamePerson && isAdult) {
-            resultText = "Succesfully Verified ✅ (Same person & 18+)";
+            resultText = "Same person & 18+";
         } else if (!isSamePerson && isAdult) {
-            resultText = "Verification Failed ❌: Faces don't match, not the same person but 18+";
+            resultText = "Faces don't match, not the same person but 18+";
         } else if (isSamePerson && !isAdult) {
-            resultText = "Verification Failed ❌: Person is under 18 years old";
+            resultText = "Person is under 18 years old";
         } else if (!isSamePerson && !isAdult) {
-            resultText = "Verification Failed ❌: Not the same person and under 18";
+            resultText = "Not the same person and under 18";
         }
 
         // 5. Spašavanje u Bazu
         try {
             const newRecord = new Verification({
-    dob: dobRaw,             
-    age: age,                
-    faceConfidence: confidence,
-    result: resultText       
+                dob: dobRaw,             
+                age: age,                
+                faceConfidence: confidence,
+                result: resultText       
 });
 
 await newRecord.save();      
