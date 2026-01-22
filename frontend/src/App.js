@@ -37,7 +37,7 @@ const App = () => {
       // Postavljamo rezultat direktno na osnovu 'success' polja sa servera
       setVerificationResult({ 
         success: data.success, 
-        message: data.result || data.message || "No ID found, please upload a clearer picture"
+        message: data.result || data.message || "Verification failed, please try again"
       });
       setStatus('result');
     } catch (e) {
