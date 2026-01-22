@@ -12,7 +12,7 @@ const Verification = require('./Verification');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 1. CORS POSTAVKE (Bez kose crte na kraju URL-a)
+// 1. CORS POSTAVKE (Bez kose crte na kraju, usklađeno sa tvojim frontendom)
 app.use(cors({
     origin: 'https://identifyme-app-fnhxi.ondigitalocean.app', 
     methods: ['GET', 'POST'],
@@ -21,7 +21,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// 2. MONGODB KONEKCIJA (DigitalOcean URI)
+// 2. MONGODB KONEKCIJA (Koristi DigitalOcean varijablu ili lokalni server)
 const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/identifyme';
 mongoose.connect(mongoURI)
     .then(() => console.log("Connected to MongoDB ✅"))
@@ -30,7 +30,7 @@ mongoose.connect(mongoURI)
 const upload = multer({ storage: multer.memoryStorage() });
 
 /**
- * Helper: Izračunavanje godina
+ * Helper: Izračunavanje godina na osnovu datuma
  */
 function calculateAge(dobString) {
     try {
@@ -49,25 +49,26 @@ function calculateAge(dobString) {
 app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]), async (req, res) => {
     console.log("--- Processing Verification ---");
     
-    // Inicijalizacija podataka za bazu
+    // Inicijalizacija podataka sa default vrijednostima da baza ne bi odbila zapis
     let dobRaw = "Not detected";
     let age = 0;
     let confidence = 0;
-    let resultText = "";
+    let resultText = "Processing started";
 
     try {
+        // Provjera da li su slike poslane
         if (!req.files || !req.files['idImage'] || !req.files['selfieImage']) {
             resultText = "Verification Failed ❌: Images are missing.";
-            await new Verification({ result: resultText }).save();
+            await new Verification({ result: resultText, age: 0 }).save();
             return res.status(400).json({ success: false, result: resultText });
         }
 
         const idImage = req.files['idImage'][0];
         const selfieImage = req.files['selfieImage'][0];
 
-        // 1. OBRADA SLIKE ZA OCR
+        // 1. OBRADA SLIKE (Smanjeno na 1200 zbog uštede memorije na DigitalOcean)
         const preprocessedIdBuffer = await sharp(idImage.buffer)
-            .resize(2000)
+            .resize(1200) 
             .grayscale()
             .normalize()
             .sharpen({ sigma: 1.5 })
@@ -82,13 +83,13 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             .replace(/[S]/g, '5')
             .replace(/[,]/g, '.'); 
 
-        // 3. PROVJERA DA LI JE SLIKA LIČNA KARTA (Identity card detection)
+        // 3. PROVJERA DA LI JE SLIKA LIČNA KARTA
         const idKeywords = ["identity", "card", "hercegovina", "republic", "birth", "prezime", "ime", "datum", "bosna"];
         const hasIdKeywords = idKeywords.some(keyword => cleanedText.toLowerCase().includes(keyword));
 
         if (!hasIdKeywords) {
             resultText = "No ID found ❌: Please insert your ID photo (Identity card not detected).";
-            await new Verification({ result: resultText }).save();
+            await new Verification({ result: resultText, age: 0, dob: "Invalid Document" }).save();
             return res.json({ success: false, result: resultText });
         }
 
@@ -106,7 +107,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             age = calculateAge(dobRaw);
         } else {
             resultText = "Verification Failed ❌: Date of Birth not detected. Capture a closer image.";
-            await new Verification({ result: resultText }).save();
+            await new Verification({ result: resultText, age: 0, dob: "Date not found" }).save();
             return res.json({ success: false, result: resultText });
         }
 
@@ -117,13 +118,15 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         form.append('image_file1', idImage.buffer, { filename: 'id.jpg' });
         form.append('image_file2', selfieImage.buffer, { filename: 'selfie.jpg' });
 
-        const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { headers: form.getHeaders() });
+        const faceResponse = await axios.post('https://api-us.faceplusplus.com/facepp/v3/compare', form, { 
+            headers: form.getHeaders() 
+        });
+        
         confidence = faceResponse.data.confidence || 0;
-
-        // LOGIKA PROVJERE
         const isSamePerson = confidence >= 70;
         const isAdult = age >= 18;
 
+        // ODREĐIVANJE FINALNOG TEKSTA
         if (isSamePerson && isAdult) {
             resultText = "Succesfully Verified ✅ (Same person & 18+)";
         } else if (!isSamePerson && isAdult) {
@@ -134,7 +137,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             resultText = "Verification Failed ❌: Not the same person and under 18";
         }
 
-        // 6. SPAŠAVANJE USPJEŠNE ILI BIOMETRIJSKI NEUSPJEŠNE VERIFIKACIJE
+        // 6. SPAŠAVANJE FINALNOG REZULTATA U BAZU
         const record = new Verification({
             dob: dobRaw,
             age: age,
@@ -142,18 +145,30 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
             result: resultText
         });
         await record.save();
-        console.log("Saved to database!");
 
-        res.json({ success: isSamePerson && isAdult, result: resultText, age, confidence });
+        res.json({ 
+            success: isSamePerson && isAdult, 
+            result: resultText, 
+            age, 
+            confidence 
+        });
 
     } catch (error) {
-        console.error("Server Error:", error.message);
-        // Čuvanje serverske greške u bazu radi debuginga
-        try {
-            await new Verification({ result: "Server Error: " + error.message }).save();
-        } catch (dbErr) { console.error("Could not save error to DB"); }
+        console.error("SERVER ERROR:", error.message);
         
-        res.status(500).json({ success: false, result: "Database/Server error occurred." });
+        // Čuvanje čak i kritične greške u bazu radi praćenja
+        try {
+            await new Verification({ 
+                result: "Critical Server Error: " + error.message,
+                age: 0 
+            }).save();
+        } catch (dbErr) { console.error("Could not save crash to DB"); }
+        
+        res.status(500).json({ 
+            success: false, 
+            result: "Database/Server error occurred.",
+            details: error.message 
+        });
     }
 });
 
