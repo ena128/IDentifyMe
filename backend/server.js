@@ -110,7 +110,7 @@ app.post('/verify', upload.fields([{ name: 'idImage' }, { name: 'selfieImage' }]
         }
 
         if (!dobRaw) {
-            return res.json({ success: false, message: 'Date of Birth not detected. Please capture a closer image without glare.' });
+            return res.json({ success: false, message: 'Date of Birth or ID not detected. Please capture a closer image without glare.' });
         }
 
         const age = calculateAge(dobRaw);
